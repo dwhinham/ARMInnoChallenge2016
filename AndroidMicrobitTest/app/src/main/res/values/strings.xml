@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">BBC micro:bit Test</string>
+    <string name="title_console">Console:</string>
+    <string name="title_status">Status:</string>
+    <string name="status_disconnected">Disconnected</string>
+    <string name="menu_connect">Connect micro:bit...</string>
+</resources>
