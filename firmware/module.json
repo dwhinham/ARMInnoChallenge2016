@@ -1,0 +1,12 @@
+{
+  "name": "firmware",
+  "version": "0.0.0",
+  "bin": "./source",
+  "private": true,
+  "description": "Firmware for the BBC MicroBit",
+  "author": "Dale Whinham, Alex Gilday, Gaetan Bahl",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "microbit": "lancaster-university/microbit"
+  }
+}
