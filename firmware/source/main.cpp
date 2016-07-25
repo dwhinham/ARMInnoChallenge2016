@@ -26,27 +26,100 @@ DEALINGS IN THE SOFTWARE.
 #include "MicroBit.h"
 #include "mbed.h"
 
+#if MICROBIT_BLE_ENABLED
+#error This program must be compiled with the Bluetooth Stack disabled.
+#endif
+
+#define SCROLL_SPEED    50
+#define BUFFER_LEN      32
+
+//             .-------------- Message length
+//             |        .----- Encrypted/not encrypted flag
+//        ___________   _
+//       /           \ / \
+// 7  6  5  4  3  2  1  0
+
+#define HDR_ENCRYPTED_FLAG_POS   0
+#define HDR_LENGTH_POS           1
+
+#define HDR_ENCRYPTED_FLAG_MSK   (0x01 << HDR_ENCRYPTED_FLAG_POS)
+#define HDR_LENGTH_MSK           (0x31 << HDR_LENGTH_POS)
+
+#define HDR_CREATE(ENC, LEN) \
+    (((ENC) << HDR_ENCRYPTED_FLAG_POS) & HDR_ENCRYPTED_FLAG_MSK) | \
+    (((LEN) << HDR_LENGTH_POS) & HDR_LENGTH_MSK)
+
 MicroBit uBit;
 
 // Enable USB serial I/O
 MicroBitSerial serial(USBTX, USBRX);
 
+// Callback invoked when micro:bit receives a datagram
+void onRecv(MicroBitEvent event)
+{
+    uint8_t rcvBuf[BUFFER_LEN + 1];
+    uBit.radio.datagram.recv(rcvBuf, sizeof(rcvBuf));
+    rcvBuf[BUFFER_LEN] = '\0';
+
+    if ((rcvBuf[0] & HDR_ENCRYPTED_FLAG_MSK) >> HDR_ENCRYPTED_FLAG_POS)
+    {
+        MicroBitImage img(5, 5);
+        img.print('!');
+        uBit.display.print(img);
+        uBit.sleep(1000);
+    }
+
+    //ManagedString s((char*)&rcvBuf[1]);
+
+    serial.send("<< RECV ");
+    serial.send((char*)&rcvBuf[1]);
+    serial.send("\r\n");
+
+    uBit.display.scroll((char*)&rcvBuf[1], SCROLL_SPEED);
+}
+
+bool preparePacketBuffer(ManagedString &string, uint8_t *buf, bool encrypted)
+{
+    int16_t len = string.length();
+
+    if (!len || len > BUFFER_LEN - 1)
+        return false;
+
+    buf[0] = HDR_CREATE(encrypted, len);
+    strcpy((char*) &buf[1], string.toCharArray());
+
+    serial.send(">> SEND ");
+    serial.send((char*)&buf[1]);
+    serial.send("\r\n");
+
+    return true;
+}
+
 int main()
 {
+    ManagedString serialRxBuf;
+    uint8_t radioTxBuf[BUFFER_LEN];
+
     // Initialise the micro:bit runtime.
     uBit.init();
 
-    // Insert your code here!
-    uBit.display.scroll("HELLO WORLD! :)", 150);
+    // Initialise the micro:bit radio
+    uBit.radio.enable();
 
-    ManagedString buf;
+    // Initialise radio receiver listener
+    uBit.messageBus.listen(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, onRecv);
 
+    // Android serial app doesn't like baud rates >9600!
     serial.baud(9600);
 
     while(true)
     {
-        buf = serial.read(1);
-        uBit.display.scroll(buf);
+        // Read until a carriage return character
+        serialRxBuf = serial.readUntil("\r", SYNC_SLEEP);
+
+        // Send message from serial port over the radio
+        if (preparePacketBuffer(serialRxBuf, radioTxBuf, false))
+            uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
     }
 
     // Simply release this fiber, which will mean we enter the scheduler. Worse case, we then
