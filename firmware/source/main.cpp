@@ -24,7 +24,6 @@ DEALINGS IN THE SOFTWARE.
 */
 
 #include "MicroBit.h"
-#include "mbed.h"
 
 #if MICROBIT_BLE_ENABLED
 #error This program must be compiled with the Bluetooth Stack disabled.
@@ -33,11 +32,15 @@ DEALINGS IN THE SOFTWARE.
 #define SCROLL_SPEED    50
 #define BUFFER_LEN      32
 
-//             .-------------- Message length
-//             |        .----- Encrypted/not encrypted flag
-//        ___________   _
-//       /           \ / \
-// 7  6  5  4  3  2  1  0
+/**********************************************************************
+ * Message header format
+ * =====================
+ *                       .-------------- Message length
+ *                       |          .--- Encrypted/not encrypted flag
+ *              _________________   _
+ *             /                 \ / \
+ * Bit: 7   6   5   4   3   2   1   0
+ **********************************************************************/
 
 #define HDR_ENCRYPTED_FLAG_POS   0
 #define HDR_LENGTH_POS           1
@@ -74,10 +77,13 @@ void onRecv(MicroBitEvent event)
     serial.send("<< RECV ");
     if (isEncrypted)
         serial.send("(Encrypted) ");
-    serial.send((char*)&rcvBuf[1]);
+    serial.send((char*) &rcvBuf[1]);
     serial.send("\r\n");
 
-    uBit.display.scroll((char*)&rcvBuf[1], SCROLL_SPEED);
+    uBit.display.scroll((char*) &rcvBuf[1], SCROLL_SPEED);
+
+    // Parameter unused
+    (void) event;
 }
 
 bool preparePacketBuffer(ManagedString &string, uint8_t *sndBuf, bool encrypted)
@@ -91,7 +97,7 @@ bool preparePacketBuffer(ManagedString &string, uint8_t *sndBuf, bool encrypted)
     strcpy((char*) &sndBuf[1], string.toCharArray());
 
     serial.send(">> SEND ");
-    serial.send((char*)&sndBuf[1]);
+    serial.send((char*) &sndBuf[1]);
     serial.send("\r\n");
 
     return true;
@@ -120,6 +126,7 @@ int main()
         // Read until a carriage return character
         serialRxBuf = serial.readUntil("\r", SYNC_SLEEP);
 
+        // If the string starts with a '!', assume message should be encrypted
         sendEncrypted = serialRxBuf.charAt(0) == '!';
 
         if (sendEncrypted)
@@ -130,8 +137,8 @@ int main()
             uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
     }
 
-    // Simply release this fiber, which will mean we enter the scheduler. Worse case, we then
-    // sit in the idle task forever, in a power efficient sleep.
+    // Simply release this fiber, which will mean we enter the scheduler. Worst
+    // case, we then sit in the idle task forever, in a power efficient sleep.
     release_fiber();
 }
 
