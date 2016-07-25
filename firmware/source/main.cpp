@@ -57,11 +57,13 @@ MicroBitSerial serial(USBTX, USBRX);
 // Callback invoked when micro:bit receives a datagram
 void onRecv(MicroBitEvent event)
 {
+    bool isEncrypted;
     uint8_t rcvBuf[BUFFER_LEN + 1];
     uBit.radio.datagram.recv(rcvBuf, sizeof(rcvBuf));
-    rcvBuf[BUFFER_LEN] = '\0';
 
-    if ((rcvBuf[0] & HDR_ENCRYPTED_FLAG_MSK) >> HDR_ENCRYPTED_FLAG_POS)
+    isEncrypted = (rcvBuf[0] & HDR_ENCRYPTED_FLAG_MSK) >> HDR_ENCRYPTED_FLAG_POS;
+
+    if (isEncrypted)
     {
         MicroBitImage img(5, 5);
         img.print('!');
@@ -69,27 +71,27 @@ void onRecv(MicroBitEvent event)
         uBit.sleep(1000);
     }
 
-    //ManagedString s((char*)&rcvBuf[1]);
-
     serial.send("<< RECV ");
+    if (isEncrypted)
+        serial.send("(Encrypted) ");
     serial.send((char*)&rcvBuf[1]);
     serial.send("\r\n");
 
     uBit.display.scroll((char*)&rcvBuf[1], SCROLL_SPEED);
 }
 
-bool preparePacketBuffer(ManagedString &string, uint8_t *buf, bool encrypted)
+bool preparePacketBuffer(ManagedString &string, uint8_t *sndBuf, bool encrypted)
 {
     int16_t len = string.length();
 
     if (!len || len > BUFFER_LEN - 1)
         return false;
 
-    buf[0] = HDR_CREATE(encrypted, len);
-    strcpy((char*) &buf[1], string.toCharArray());
+    sndBuf[0] = HDR_CREATE(encrypted, len);
+    strcpy((char*) &sndBuf[1], string.toCharArray());
 
     serial.send(">> SEND ");
-    serial.send((char*)&buf[1]);
+    serial.send((char*)&sndBuf[1]);
     serial.send("\r\n");
 
     return true;
@@ -99,6 +101,7 @@ int main()
 {
     ManagedString serialRxBuf;
     uint8_t radioTxBuf[BUFFER_LEN];
+    bool sendEncrypted;
 
     // Initialise the micro:bit runtime.
     uBit.init();
@@ -117,8 +120,13 @@ int main()
         // Read until a carriage return character
         serialRxBuf = serial.readUntil("\r", SYNC_SLEEP);
 
+        sendEncrypted = serialRxBuf.charAt(0) == '!';
+
+        if (sendEncrypted)
+            serialRxBuf = serialRxBuf.substring(1, serialRxBuf.length() - 1);
+
         // Send message from serial port over the radio
-        if (preparePacketBuffer(serialRxBuf, radioTxBuf, false))
+        if (preparePacketBuffer(serialRxBuf, radioTxBuf, sendEncrypted))
             uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
     }
 
