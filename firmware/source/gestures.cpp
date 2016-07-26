@@ -1,54 +1,17 @@
 #include "MicroBit.h"
 #include <cmath>
 #include "gestures.hpp"
+#include "images.h"
 
 #define DETECT_THRESHOLD 550
 #define SMALL_SLEEP 100
-#define BIG_SLEEP 500
+#define BIG_SLEEP 900
 
 extern MicroBit uBit; 
 
 int neutralX = 0, neutralY = 0, neutralZ = 0;
 
-const uint8_t left[] = {
-                      0, 0, 1, 0, 0,
-                      0, 1, 0, 0, 0,
-                      1, 1, 1, 1, 1,
-                      0, 1, 0, 0, 0,
-                      0, 0, 1, 0, 0, };
-const uint8_t right[] = {
-                      0, 0, 1, 0, 0,
-                      0, 0, 0, 1, 0,
-                      1, 1, 1, 1, 1,
-                      0, 0, 0, 1, 0,
-                      0, 0, 1, 0, 0, };                          
-const uint8_t up[] = {
-                      0, 0, 1, 0, 0,
-                      0, 1, 1, 1, 0,
-                      1, 0, 1, 0, 1,
-                      0, 0, 1, 0, 0,
-                      0, 0, 1, 0, 0, };              
-const uint8_t down[] = {
-                      0, 0, 1, 0, 0,
-                      0, 0, 1, 0, 0,
-                      1, 0, 1, 0, 1,
-                      0, 1, 1, 1, 0,
-                      0, 0, 1, 0, 0, };     
-                      
-const uint8_t back[] = {
-                      0, 0, 0, 0, 0,
-                      0, 0, 0, 0, 0,
-                      0, 0, 1, 0, 0,
-                      0, 0, 0, 0, 0,
-                      0, 0, 0, 0, 0, };                          
-const uint8_t front[] = {
-                      0, 1, 1, 1, 0,
-                      1, 0, 0, 0, 1,
-                      1, 0, 1, 0, 1,
-                      1, 0, 0, 0, 1,
-                      0, 1, 1, 1, 0, };    
-
-void setNeutral(MicroBitEvent)
+void setNeutral()
 {
     neutralX = uBit.accelerometer.getX();
     neutralY = uBit.accelerometer.getY();
@@ -56,21 +19,17 @@ void setNeutral(MicroBitEvent)
 }
                          
 void getGestures(unsigned int number, enum gestures * gestures_array) {
-                    
-    MicroBitImage imgup(5,5,up);
-    MicroBitImage imgdown(5,5,down); 
-    MicroBitImage imgleft(5,5,left); 
-    MicroBitImage imgright(5,5,right);  
-    MicroBitImage imgfront(5,5,front); 
-    MicroBitImage imgback(5,5,back); 
 
     uBit.display.clear();
     
     bool gottasleep = false;
     
     unsigned int index = 0;
-    
-    uBit.messageBus.listen(MICROBIT_ID_BUTTON_A, MICROBIT_BUTTON_EVT_CLICK, setNeutral);
+
+    uBit.display.printChar('?');
+    setNeutral();
+
+    uBit.sleep(BIG_SLEEP);
       
     while(index < number)
     {
@@ -152,6 +111,9 @@ void getGestures(unsigned int number, enum gestures * gestures_array) {
         }
     }            
 
-    uBit.messageBus.ignore(MICROBIT_ID_BUTTON_A, MICROBIT_BUTTON_EVT_CLICK, setNeutral);
+    uBit.display.print(imgtick);
+    uBit.sleep(BIG_SLEEP);
+
+    uBit.display.clear();
 }
 
