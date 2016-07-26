@@ -151,5 +151,7 @@ void getGestures(unsigned int number, enum gestures * gestures_array) {
             uBit.sleep(BIG_SLEEP);
         }
     }            
+
+    uBit.messageBus.ignore(MICROBIT_ID_BUTTON_A, MICROBIT_BUTTON_EVT_CLICK, setNeutral);
 }
 
