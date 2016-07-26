@@ -53,7 +53,7 @@ DEALINGS IN THE SOFTWARE.
 #define HDR_LENGTH_POS           1
 
 #define HDR_ENCRYPTED_FLAG_MSK   (0x01 << HDR_ENCRYPTED_FLAG_POS)
-#define HDR_LENGTH_MSK           (0x31 << HDR_LENGTH_POS)
+#define HDR_LENGTH_MSK           (0x1F << HDR_LENGTH_POS)
 
 #define HDR_CREATE(ENC, LEN) \
     (((ENC) << HDR_ENCRYPTED_FLAG_POS) & HDR_ENCRYPTED_FLAG_MSK) | \
@@ -89,10 +89,15 @@ uint8_t getFletcherChecksum(ManagedString &string)
 void onRecv(MicroBitEvent event)
 {
     bool isEncrypted;
+    int16_t len;
     uint8_t rcvBuf[BUFFER_LEN + 1];
     uBit.radio.datagram.recv(rcvBuf, sizeof(rcvBuf));
 
     isEncrypted = (rcvBuf[0] & HDR_ENCRYPTED_FLAG_MSK) >> HDR_ENCRYPTED_FLAG_POS;
+    len = (rcvBuf[0] & HDR_LENGTH_MSK) >> HDR_LENGTH_POS;
+    serial.send(ManagedString(len));
+
+    rcvBuf[len+2] = 0;
 
     if (isEncrypted)
     {
@@ -131,6 +136,7 @@ bool preparePacketBuffer(ManagedString &string, uint8_t *sndBuf, bool isEncrypte
     sndBuf[0] = HDR_CREATE(isEncrypted, len);
     sndBuf[1] = getFletcherChecksum(string);
     strcpy((char*) &sndBuf[2], string.toCharArray());
+    sndBuf[len+2] = 0;
 
     serial.send(">> SEND ");
     if (isEncrypted)
