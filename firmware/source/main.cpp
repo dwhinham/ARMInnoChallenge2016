@@ -24,6 +24,7 @@ DEALINGS IN THE SOFTWARE.
 */
 
 #include "MicroBit.h"
+#include "gestures.hpp"
 
 #if MICROBIT_BLE_ENABLED
 #error This program must be compiled with the Bluetooth Stack disabled.
@@ -31,6 +32,7 @@ DEALINGS IN THE SOFTWARE.
 
 #define SCROLL_SPEED    50
 #define BUFFER_LEN      32
+#define NUM_GESTURES    5
 
 /*************************************************************************
  * Message header format
@@ -58,6 +60,8 @@ DEALINGS IN THE SOFTWARE.
     (((LEN) << HDR_LENGTH_POS) & HDR_LENGTH_MSK)
 
 MicroBit uBit;
+bool hasEncryptionKey;
+enum gestures gestureArray[NUM_GESTURES];
 
 // Enable USB serial I/O
 MicroBitSerial serial(USBTX, USBRX);
@@ -137,6 +141,23 @@ bool preparePacketBuffer(ManagedString &string, uint8_t *sndBuf, bool isEncrypte
     return true;
 }
 
+void generateEncryptionKey(MicroBitEvent event)
+{
+    // Disable radio listener
+    uBit.messageBus.ignore(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, onRecv);
+
+    // 
+    getGestures(NUM_GESTURES, gestureArray);
+
+    hasEncryptionKey= true;
+
+    // Re-enable radio receiver listener
+    uBit.messageBus.listen(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, onRecv);
+
+    // Parameter unused
+    (void) event;
+}
+
 int main()
 {
     ManagedString serialRxBuf;
@@ -152,6 +173,8 @@ int main()
     // Initialise radio receiver listener
     uBit.messageBus.listen(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, onRecv);
 
+    // Listen for button hold event
+    uBit.messageBus.listen(MICROBIT_ID_BUTTON_A, MICROBIT_BUTTON_EVT_HOLD, generateEncryptionKey);
     // Android serial app doesn't like baud rates >9600!
     serial.baud(9600);
 
