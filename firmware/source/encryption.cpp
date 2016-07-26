@@ -24,7 +24,7 @@ void encryptString(char * message, unsigned int n, int shift)
     }
 }
 
-void decryptString(char * message, unsigned int n, int shift)
+void decryptString(unsigned char * message, unsigned int n, int shift)
 {
     for(unsigned int i = 0; i < n; i++)
     {

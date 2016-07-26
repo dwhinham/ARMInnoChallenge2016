@@ -7,7 +7,7 @@
 int getShift(enum gestures * array, unsigned int arraylength);
 
 void encryptString(char * message, unsigned int n, int shift);
-void decryptString(char * message, unsigned int n, int shift);
+void decryptString(unsigned char * message, unsigned int n, int shift);
 
 
 #endif
