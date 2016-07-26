@@ -1,4 +1,4 @@
-package com.gcea.androidmicrobittest;
+package com.gcea.microbitencryptiondemo;
 
 import org.junit.Test;
 

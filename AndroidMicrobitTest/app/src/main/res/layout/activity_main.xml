@@ -5,7 +5,7 @@
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.gcea.androidmicrobittest.MainActivity"
+    tools:context="com.gcea.microbitencryptiondemo.MainActivity"
     android:orientation="vertical">
 
     <LinearLayout
@@ -13,42 +13,43 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="false"
-        android:layout_centerVertical="true">
+        android:layout_centerVertical="true"
+        android:id="@+id/linearLayout">
 
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:srcCompat="@drawable/microbit_logo"
             android:id="@+id/imgMicroBit"
-            android:tint="@color/logoColor"
             android:adjustViewBounds="true"
             android:layout_marginLeft="50dp"
             android:layout_marginRight="50dp"
-            android:layout_marginBottom="25dp"
-            android:layout_centerHorizontal="false" />
+            android:layout_marginBottom="50dp"
+            android:layout_centerHorizontal="false"
+            android:alpha="0.3" />
 
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:srcCompat="@drawable/arm_logo"
             android:id="@+id/imgARM"
-            android:tint="@color/logoColor"
             android:layout_below="@id/imgMicroBit"
             android:layout_marginLeft="50dp"
             android:layout_marginRight="50dp"
             android:layout_centerHorizontal="true"
-            android:adjustViewBounds="true" />
+            android:adjustViewBounds="true"
+            android:alpha="0.3" />
+
     </LinearLayout>
 
-    <LinearLayout
-        android:orientation="vertical"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:weightSum="1">
+        android:layout_height="match_parent">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:id="@+id/statusLayout">
 
             <TextView
                 android:id="@+id/txtTitleStatus"
@@ -69,21 +70,25 @@
                 android:layout_margin="5dp"
                 android:textColor="@color/colorRed"
                 android:textAlignment="textEnd" />
+
         </LinearLayout>
 
         <TextView
-            android:id="@+id/txtTitleConsole"
+            android:id="@+id/txtTitleMessages"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            android:text="@string/title_console"
+            android:text="@string/title_messages"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textAlignment="viewStart" />
+            android:textAlignment="viewStart"
+            android:layout_weight="1"
+            android:layout_below="@id/statusLayout" />
 
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="283dp"
-            android:layout_weight="0.95">
+            android:layout_height="wrap_content"
+            android:layout_weight="0.95"
+            android:layout_below="@id/txtTitleMessages">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -91,21 +96,41 @@
                 android:orientation="vertical" >
 
                 <TextView
-                    android:id="@+id/txtConsole"
+                    android:id="@+id/txtMessages"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_margin="5dp"
                     android:fontFamily="monospace"
                     android:textSize="14sp"
-                    android:textIsSelectable="true"
-                    android:singleLine="false" />
+                    android:textIsSelectable="true" />
 
             </LinearLayout>
         </ScrollView>
 
-        <LinearLayout
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:id="@+id/sendLayout"
+            android:layout_alignParentBottom="true"
+            android:background="@color/colorPrimaryDark">
+
+            <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@android:drawable/ic_menu_send"
+                android:id="@+id/btnSend"
+                android:layout_alignParentRight="true"
+                android:layout_margin="5dp"
+                android:layout_centerVertical="true" />
+
+            <CheckBox
+                android:text="@string/encrypt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/chkEncrypt"
+                android:layout_centerVertical="true"
+                android:layout_toLeftOf="@id/btnSend"
+                android:layout_marginRight="5dp" />
 
             <EditText
                 android:layout_width="match_parent"
@@ -114,16 +139,13 @@
                 android:ems="10"
                 android:id="@+id/edtMessage"
                 tools:text="Message"
-                android:layout_weight="1" />
+                android:layout_weight="1"
+                android:imeOptions="actionSend"
+                android:layout_toLeftOf="@id/chkEncrypt"
+                android:layout_centerVertical="true" />
 
-            <Button
-                android:text="Send"
-                android:layout_width="150dp"
-                android:layout_height="wrap_content"
-                android:id="@+id/btnSend"
-                android:layout_weight="1" />
-        </LinearLayout>
+        </RelativeLayout>
 
-    </LinearLayout>
+    </RelativeLayout>
 
 </RelativeLayout>

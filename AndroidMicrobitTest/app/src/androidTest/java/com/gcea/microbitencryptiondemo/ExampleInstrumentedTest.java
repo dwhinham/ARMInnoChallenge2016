@@ -1,4 +1,4 @@
-package com.gcea.androidmicrobittest;
+package com.gcea.microbitencryptiondemo;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
