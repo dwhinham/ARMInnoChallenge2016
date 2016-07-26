@@ -43,7 +43,8 @@
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:weightSum="1">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -81,7 +82,8 @@
 
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="283dp"
+            android:layout_weight="0.95">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -97,8 +99,30 @@
                     android:textSize="14sp"
                     android:textIsSelectable="true"
                     android:singleLine="false" />
+
             </LinearLayout>
         </ScrollView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPersonName"
+                android:ems="10"
+                android:id="@+id/edtMessage"
+                tools:text="Message"
+                android:layout_weight="1" />
+
+            <Button
+                android:text="Send"
+                android:layout_width="150dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/btnSend"
+                android:layout_weight="1" />
+        </LinearLayout>
 
     </LinearLayout>
 
