@@ -2,7 +2,7 @@ import os
 import ycm_core
 
 flags = [
-    '-Wall', '-Wextra', '-Werrror',
+    '-Wall', '-Wextra', '-Werror',
     '-Wno-missing-field-initializers', '-Wno-unused-parameter',
     '-Wno-strict-aliasing',
     '-x',
