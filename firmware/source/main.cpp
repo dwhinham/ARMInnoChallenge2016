@@ -25,6 +25,7 @@ DEALINGS IN THE SOFTWARE.
 
 #include "MicroBit.h"
 #include "gestures.hpp"
+#include "encryption.h"
 
 #if MICROBIT_BLE_ENABLED
 #error This program must be compiled with the Bluetooth Stack disabled.
@@ -193,11 +194,23 @@ int main()
         sendEncrypted = serialRxBuf.charAt(0) == '!';
 
         if (sendEncrypted)
+        {
             serialRxBuf = serialRxBuf.substring(1, serialRxBuf.length() - 1);
+            const char * chars = serialRxBuf.toCharArray();
+            char * msg = new char[serialRxBuf.length()];
+            strcpy(msg, chars);
+            encryptString(msg,serialRxBuf.length(), getShift(gestureArray, NUM_GESTURES));
+            ManagedString encryptedMessage((const char *) msg);
 
-        // Send message from serial port over the radio
-        if (preparePacketBuffer(serialRxBuf, radioTxBuf, sendEncrypted))
-            uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
+            // Send message from serial port over the radio
+            if (preparePacketBuffer(encryptedMessage, radioTxBuf, sendEncrypted))
+                uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
+        }
+        else
+        {
+            if (preparePacketBuffer(serialRxBuf, radioTxBuf, sendEncrypted))
+                uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
+        }
     }
 
     // Simply release this fiber, which will mean we enter the scheduler. Worst
