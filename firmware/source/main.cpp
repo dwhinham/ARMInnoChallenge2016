@@ -32,15 +32,20 @@ DEALINGS IN THE SOFTWARE.
 #define SCROLL_SPEED    50
 #define BUFFER_LEN      32
 
-/**********************************************************************
+/*************************************************************************
  * Message header format
  * =====================
- *                       .-------------- Message length
- *                       |          .--- Encrypted/not encrypted flag
- *              _________________   _
- *             /                 \ / \
- * Bit: 7   6   5   4   3   2   1   0
- **********************************************************************/
+ *                            .-------------- Message length
+ *                            |          .--- Encrypted/not encrypted flag
+ *                   _________________   _
+ *                  /                 \ / \
+ * Byte 1 Bit: 7   6   5   4   3   2   1   0
+ *
+ *                           .--------------- Fletcher checksum
+ *              ___________________________
+ *             /                           \
+ * Byte 2 Bit: 7   6   5   4   3   2   1   0
+ *************************************************************************/
 
 #define HDR_ENCRYPTED_FLAG_POS   0
 #define HDR_LENGTH_POS           1
@@ -57,6 +62,25 @@ MicroBit uBit;
 // Enable USB serial I/O
 MicroBitSerial serial(USBTX, USBRX);
 
+uint8_t getFletcherChecksum(ManagedString &string)
+{
+    int32_t sum1 = 0;
+    int32_t sum2 = 0;
+
+    int16_t i;
+    int16_t len = string.length();
+    for (i = 0; i < len; ++i)
+    {
+        sum1 += (uint8_t) string.charAt(i);
+        sum2 += sum1;
+    }
+
+    int8_t code1 = (int8_t) (sum1 % 255);
+    int8_t code2 = (int8_t) (sum2 % 255);
+    int8_t final = (int8_t) (((int16_t) (code1 + code2)) % 255);
+    return final;
+}
+
 // Callback invoked when micro:bit receives a datagram
 void onRecv(MicroBitEvent event)
 {
@@ -72,15 +96,23 @@ void onRecv(MicroBitEvent event)
         img.print('!');
         uBit.display.print(img);
         uBit.sleep(1000);
+	// Decrypt here
     }
+
+    ManagedString s((char*) &rcvBuf[2]);
+    
 
     serial.send("<< RECV ");
     if (isEncrypted)
         serial.send("(Encrypted) ");
-    serial.send((char*) &rcvBuf[1]);
+    if (rcvBuf[1] == getFletcherChecksum(s))
+      serial.send("(valid) ");
+    else
+      serial.send("(invalid) ");
+    serial.send((char*) &rcvBuf[2]);
     serial.send("\r\n");
 
-    uBit.display.scroll((char*) &rcvBuf[1], SCROLL_SPEED);
+    uBit.display.scroll((char*) &rcvBuf[2], SCROLL_SPEED);
 
     // Parameter unused
     (void) event;
@@ -94,10 +126,11 @@ bool preparePacketBuffer(ManagedString &string, uint8_t *sndBuf, bool encrypted)
         return false;
 
     sndBuf[0] = HDR_CREATE(encrypted, len);
-    strcpy((char*) &sndBuf[1], string.toCharArray());
+    sndBuf[1] = getFletcherChecksum(string);
+    strcpy((char*) &sndBuf[2], string.toCharArray());
 
     serial.send(">> SEND ");
-    serial.send((char*) &sndBuf[1]);
+    serial.send((char*) &sndBuf[2]);
     serial.send("\r\n");
 
     return true;
