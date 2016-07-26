@@ -64,7 +64,4 @@ MicroBitImage imgback(5,5,UBIT_IMAGE_ARRAY_back);
 MicroBitImage imgtick(5,5,UBIT_IMAGE_ARRAY_tick); 
 MicroBitImage imgkey(5,5,UBIT_IMAGE_ARRAY_key); 
 
-
-
-
 #endif
