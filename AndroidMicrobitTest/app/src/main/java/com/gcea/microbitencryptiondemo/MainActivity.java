@@ -1,4 +1,4 @@
-package com.gcea.androidmicrobittest;
+package com.gcea.microbitencryptiondemo;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -15,8 +15,9 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,10 +30,11 @@ public class MainActivity extends AppCompatActivity {
     private static final String ACTION_USB_PERMISSION = "com.gcea.androidmicrobittest.USB_PERMISSION";
 
     private TextView status;
-    private TextView console;
+    private TextView messages;
 
+    private CheckBox chkEncrypt;
     private EditText edtMessage;
-    private Button btnSend;
+    private ImageButton btnSend;
 
     private UsbManager usbManager;
     private UsbDevice microBit;
@@ -52,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
             }
             if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
                 Toast.makeText(MainActivity.this, "micro:bit detached!", Toast.LENGTH_LONG).show();
-                disconnectMicroBit(intent);
+                disconnectMicroBit();
             }
         }
     };
@@ -64,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    console.append(new String(bytes));
+                    messages.append(new String(bytes));
                 }
             });
         }
@@ -97,10 +99,11 @@ public class MainActivity extends AppCompatActivity {
         usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
 
         status = (TextView) findViewById(R.id.txtStatus);
-        console = (TextView) findViewById(R.id.txtConsole);
+        messages = (TextView) findViewById(R.id.txtMessages);
 
+        chkEncrypt = (CheckBox) findViewById(R.id.chkEncrypt);
         edtMessage = (EditText) findViewById(R.id.edtMessage);
-        btnSend = (Button) findViewById(R.id.btnSend);
+        btnSend = (ImageButton) findViewById(R.id.btnSend);
 
         btnSend.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -114,12 +117,15 @@ public class MainActivity extends AppCompatActivity {
                     if (serial == null)
                         return;
 
+                    if (chkEncrypt.isChecked())
+                        message = "!" + message;
+
                     message += '\r';
 
                     serial.write(message.getBytes());
                     edtMessage.setText("");
                 } catch (Exception e) {
-                    console.append(e.getMessage());
+                    messages.append(e.getMessage());
                 }
             }
         });
@@ -163,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
 
         serial = UsbSerialDevice.createUsbSerialDevice(microBit, microBitConnection);
         serial.open();
-        serial.setBaudRate(115200);
+        serial.setBaudRate(9600);
         serial.setDataBits(UsbSerialInterface.DATA_BITS_8);
         serial.setParity(UsbSerialInterface.PARITY_ODD);
         serial.setFlowControl(UsbSerialInterface.FLOW_CONTROL_OFF);
@@ -171,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
         serial.read(mSerialReceiveCallback);
     }
 
-    private void disconnectMicroBit(Intent intent) {
+    private void disconnectMicroBit() {
         status.setText("Disconnected");
         status.setTextColor(Color.RED);
 
