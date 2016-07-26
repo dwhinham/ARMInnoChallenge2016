@@ -1,31 +1,132 @@
 package com.gcea.androidmicrobittest;
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.graphics.Color;
+import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbDeviceConnection;
+import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.Set;
+import com.felhr.usbserial.UsbSerialDevice;
+import com.felhr.usbserial.UsbSerialInterface;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
-    private static final int REQUEST_ENABLE_BT = 1;
+    private static final String ACTION_USB_PERMISSION = "com.gcea.androidmicrobittest.USB_PERMISSION";
 
+    private TextView status;
     private TextView console;
+
+    private EditText edtMessage;
+    private Button btnSend;
+
+    private UsbManager usbManager;
+    private UsbDevice microBit;
+    private UsbDeviceConnection microBitConnection;
+    UsbSerialDevice serial;
+
+    private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (ACTION_USB_PERMISSION.equals(action)) {
+                Toast.makeText(MainActivity.this, "Permission granted!", Toast.LENGTH_LONG).show();
+                connectMicroBit(intent);
+            }
+            if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
+                Toast.makeText(MainActivity.this, "micro:bit attached!", Toast.LENGTH_LONG).show();
+                connectMicroBit(intent);
+            }
+            if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+                Toast.makeText(MainActivity.this, "micro:bit detached!", Toast.LENGTH_LONG).show();
+                disconnectMicroBit(intent);
+            }
+        }
+    };
+
+    private UsbSerialInterface.UsbReadCallback mSerialReceiveCallback = new UsbSerialInterface.UsbReadCallback() {
+        @Override
+        public void onReceivedData(final byte[] bytes)
+        {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    console.append(new String(bytes));
+                }
+            });
+        }
+    };
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        this.unregisterReceiver(mUsbReceiver);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ACTION_USB_PERMISSION);
+        filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+        filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+
+        this.registerReceiver(mUsbReceiver, filter);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
+
+        status = (TextView) findViewById(R.id.txtStatus);
         console = (TextView) findViewById(R.id.txtConsole);
+
+        edtMessage = (EditText) findViewById(R.id.edtMessage);
+        btnSend = (Button) findViewById(R.id.btnSend);
+
+        btnSend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    String message = edtMessage.getText().toString();
+
+                    if (message.length() == 0)
+                        return;
+
+                    if (serial == null)
+                        return;
+
+                    message += '\r';
+
+                    serial.write(message.getBytes());
+                    edtMessage.setText("");
+                } catch (Exception e) {
+                    console.append(e.getMessage());
+                }
+            }
+        });
+
+        Intent intent = getIntent();
+        if (intent != null && intent.getAction().equals(UsbManager.ACTION_USB_DEVICE_ATTACHED))
+            connectMicroBit(intent);
     }
 
     @Override
@@ -39,54 +140,42 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
         switch (item.getItemId()) {
-            case R.id.menuConnect:
-                connectMicroBit();
-                return true;
-
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch (requestCode) {
-            case REQUEST_ENABLE_BT:
-                if (resultCode == RESULT_CANCELED)
-                    Toast.makeText(this, "Bluetooth was not enabled.", Toast.LENGTH_SHORT).show();
-                else {
-                    Toast.makeText(this, "Bluetooth enabled!", Toast.LENGTH_SHORT).show();
-                    connectMicroBit();
-                }
-                break;
+    // Open USB Serial on BBC micro:bit
+    private void connectMicroBit(Intent intent) {
+        microBit = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
 
-            default:
-                super.onActivityResult(requestCode, resultCode, data);
+        if (!usbManager.hasPermission(microBit))
+        {
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
+            usbManager.requestPermission(microBit, pendingIntent);
+            return;
         }
+
+        status.setText("Connected");
+        status.setTextColor(Color.GREEN);
+
+        microBitConnection = usbManager.openDevice(microBit);
+
+        serial = UsbSerialDevice.createUsbSerialDevice(microBit, microBitConnection);
+        serial.open();
+        serial.setBaudRate(115200);
+        serial.setDataBits(UsbSerialInterface.DATA_BITS_8);
+        serial.setParity(UsbSerialInterface.PARITY_ODD);
+        serial.setFlowControl(UsbSerialInterface.FLOW_CONTROL_OFF);
+
+        serial.read(mSerialReceiveCallback);
     }
 
-    // Scan for and connect Bluetooth device
-    private void connectMicroBit() {
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    private void disconnectMicroBit(Intent intent) {
+        status.setText("Disconnected");
+        status.setTextColor(Color.RED);
 
-        // Bail out if we can't find a BT adapter
-        if (bluetoothAdapter == null) {
-            Toast.makeText(this, "Your device does not support Bluetooth!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // If BT isn't enabled, ask user to enable
-        if (!bluetoothAdapter.isEnabled()) {
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-            return;
-        }
-
-        // Get all paired BT devices on phone, dump them to log
-        Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
-
-        if (pairedDevices.size() > 0)
-            for (BluetoothDevice device : pairedDevices)
-                console.append("Paired device found; name=\"" + device.getName() + "\", addr=\"" + device.getAddress() + "\"\n");
+        if (serial != null)
+            serial.close();
     }
 }
