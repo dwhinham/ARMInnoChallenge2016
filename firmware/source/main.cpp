@@ -35,15 +35,15 @@ DEALINGS IN THE SOFTWARE.
 /*************************************************************************
  * Message header format
  * =====================
- *                            .-------------- Message length
- *                            |          .--- Encrypted/not encrypted flag
- *                   _________________   _
- *                  /                 \ / \
+ *                              .-------------- Message length
+ *                              |          .--- Encrypted/not encrypted flag
+ *                     _________________   _
+ *                    /                 \ / \
  * Byte 1 Bit: 7   6   5   4   3   2   1   0
  *
  *                           .--------------- Fletcher checksum
- *              ___________________________
- *             /                           \
+ *             _____________________________
+ *            /                             \
  * Byte 2 Bit: 7   6   5   4   3   2   1   0
  *************************************************************************/
 
@@ -96,11 +96,10 @@ void onRecv(MicroBitEvent event)
         img.print('!');
         uBit.display.print(img);
         uBit.sleep(1000);
-	// Decrypt here
+        // Decrypt here
     }
 
     ManagedString s((char*) &rcvBuf[2]);
-    
 
     serial.send("<< RECV ");
     if (isEncrypted)
