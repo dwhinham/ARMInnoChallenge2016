@@ -118,18 +118,20 @@ void onRecv(MicroBitEvent event)
     (void) event;
 }
 
-bool preparePacketBuffer(ManagedString &string, uint8_t *sndBuf, bool encrypted)
+bool preparePacketBuffer(ManagedString &string, uint8_t *sndBuf, bool isEncrypted)
 {
     int16_t len = string.length();
 
     if (!len || len > BUFFER_LEN - 1)
         return false;
 
-    sndBuf[0] = HDR_CREATE(encrypted, len);
+    sndBuf[0] = HDR_CREATE(isEncrypted, len);
     sndBuf[1] = getFletcherChecksum(string);
     strcpy((char*) &sndBuf[2], string.toCharArray());
 
     serial.send(">> SEND ");
+    if (isEncrypted)
+        serial.send("(Encrypted) ");
     serial.send((char*) &sndBuf[2]);
     serial.send("\r\n");
 
