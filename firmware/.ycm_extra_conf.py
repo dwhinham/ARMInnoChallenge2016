@@ -7,9 +7,13 @@ flags = [
     '-Wno-strict-aliasing',
     '-x',
     'c++',
+
+    '-DNRF51',
     '-Iyotta_modules/mbed-classic/api',
+    '-Iyotta_modules/mbed-classic/targets/cmsis',
     '-Iyotta_modules/mbed-classic/targets/cmsis/TARGET_NORDIC/TARGET_MCU_NRF51822',
-    '-Iyotta_modules/mbed-classic/targets/hal/TARGET_NORDIC/TARGET_MCU_NRF51822/TARGET_NRF51_MICROBIT'
+    '-Iyotta_modules/mbed-classic/targets/hal/TARGET_NORDIC/TARGET_MCU_NRF51822',
+    '-Iyotta_modules/mbed-classic/targets/hal/TARGET_NORDIC/TARGET_MCU_NRF51822/TARGET_NRF51_MICROBIT',
     '-Iyotta_modules/microbit-dal/inc/core',
     '-Iyotta_modules/microbit-dal/inc/drivers',
     '-Iyotta_modules/microbit-dal/inc/types',
