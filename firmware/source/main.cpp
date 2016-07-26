@@ -26,6 +26,7 @@ DEALINGS IN THE SOFTWARE.
 #include "MicroBit.h"
 #include "gestures.hpp"
 #include "encryption.h"
+#include "images.h"
 
 #if MICROBIT_BLE_ENABLED
 #error This program must be compiled with the Bluetooth Stack disabled.
@@ -103,10 +104,10 @@ void onRecv(MicroBitEvent event)
     if (isEncrypted)
     {
         MicroBitImage img(5, 5);
-        img.print('!');
-        uBit.display.print(img);
+        uBit.display.print(imgkey);
         uBit.sleep(1000);
         // Decrypt here
+        decryptString(rcvBuf + 2, len, getShift(gestureArray, NUM_GESTURES));
     }
 
     ManagedString s((char*) &rcvBuf[2]);
@@ -205,6 +206,8 @@ int main()
             // Send message from serial port over the radio
             if (preparePacketBuffer(encryptedMessage, radioTxBuf, sendEncrypted))
                 uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
+
+            delete[] msg;
         }
         else
         {
