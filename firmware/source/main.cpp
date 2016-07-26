@@ -1,31 +1,7 @@
-/*
-The MIT License (MIT)
+#include <MicroBit.h>
 
-Copyright (c) 2016 British Broadcasting Corporation.
-This software is provided by Lancaster University by arrangement with the BBC.
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the "Software"),
-to deal in the Software without restriction, including without limitation
-the rights to use, copy, modify, merge, publish, distribute, sublicense,
-and/or sell copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-*/
-
-#include "MicroBit.h"
-#include "gestures.hpp"
 #include "encryption.h"
+#include "gestures.h"
 #include "images.h"
 
 #if MICROBIT_BLE_ENABLED
@@ -61,12 +37,10 @@ DEALINGS IN THE SOFTWARE.
     (((ENC) << HDR_ENCRYPTED_FLAG_POS) & HDR_ENCRYPTED_FLAG_MSK) | \
     (((LEN) << HDR_LENGTH_POS) & HDR_LENGTH_MSK)
 
+// Global variables
 MicroBit uBit;
-bool hasEncryptionKey;
-enum gestures gestureArray[NUM_GESTURES];
-
-// Enable USB serial I/O
 MicroBitSerial serial(USBTX, USBRX);
+gesture_t gestures[NUM_GESTURES];
 
 uint8_t getFletcherChecksum(ManagedString &string)
 {
@@ -104,10 +78,9 @@ void onRecv(MicroBitEvent event)
     if (isEncrypted)
     {
         MicroBitImage img(5, 5);
-        uBit.display.print(imgkey);
+        uBit.display.print(MICROBIT_IMAGE_KEY);
         uBit.sleep(1000);
-        // Decrypt here
-        decryptString(rcvBuf + 2, len, getShift(gestureArray, NUM_GESTURES));
+        decryptString((char*) &rcvBuf[2], len, getShift(gestures, NUM_GESTURES));
     }
 
     ManagedString s((char*) &rcvBuf[2]);
@@ -154,10 +127,8 @@ void generateEncryptionKey(MicroBitEvent event)
     // Disable radio listener
     uBit.messageBus.ignore(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, onRecv);
 
-    // 
-    getGestures(NUM_GESTURES, gestureArray);
-
-    hasEncryptionKey= true;
+    // Record 5 gestures to act as an encryption key
+    getGestures(NUM_GESTURES, gestures);
 
     // Re-enable radio receiver listener
     uBit.messageBus.listen(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, onRecv);
@@ -200,7 +171,7 @@ int main()
             const char * chars = serialRxBuf.toCharArray();
             char * msg = new char[serialRxBuf.length()];
             strcpy(msg, chars);
-            encryptString(msg,serialRxBuf.length(), getShift(gestureArray, NUM_GESTURES));
+            encryptString(msg,serialRxBuf.length(), getShift(gestures, NUM_GESTURES));
             ManagedString encryptedMessage((const char *) msg);
 
             // Send message from serial port over the radio

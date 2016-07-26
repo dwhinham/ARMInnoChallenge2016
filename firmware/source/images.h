@@ -1,15 +1,10 @@
-#ifndef __IMAGESH__
-#define __IMAGESH__
+#ifndef IMAGES_H
+#define IMAGES_H
 
-#include "MicroBit.h"
+class MicroBitImage;
 
-extern MicroBitImage imgup;
-extern MicroBitImage imgdown;
-extern MicroBitImage imgleft;
-extern MicroBitImage imgright;
-extern MicroBitImage imgfront;
-extern MicroBitImage imgback;
-extern MicroBitImage imgtick;
-extern MicroBitImage imgkey;
+#define MICROBIT_IMAGE(NAME, DATA...) extern MicroBitImage MICROBIT_IMAGE_##NAME;
+#include "imagedata.h"
+#undef MICROBIT_IMAGE
 
-#endif
+#endif // IMAGES_H

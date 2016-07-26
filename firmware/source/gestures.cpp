@@ -1,13 +1,14 @@
-#include "MicroBit.h"
 #include <cmath>
-#include "gestures.hpp"
+#include <MicroBit.h>
+
+#include "gestures.h"
 #include "images.h"
 
-#define DETECT_THRESHOLD 550
-#define SMALL_SLEEP 100
-#define BIG_SLEEP 900
+#define DETECT_THRESHOLD    550
+#define SMALL_SLEEP         100
+#define BIG_SLEEP           900
 
-extern MicroBit uBit; 
+extern MicroBit uBit;
 
 int neutralX = 0, neutralY = 0, neutralZ = 0;
 
@@ -15,105 +16,103 @@ void setNeutral()
 {
     neutralX = uBit.accelerometer.getX();
     neutralY = uBit.accelerometer.getY();
-    neutralZ = uBit.accelerometer.getZ();                             
+    neutralZ = uBit.accelerometer.getZ();
 }
-                         
-void getGestures(unsigned int number, enum gestures * gestures_array) {
 
-    uBit.display.clear();
-    
-    bool gottasleep = false;
-    
+void getGestures(size_t numGestures, gesture_t *gestures)
+{
+    bool gottaSleep = false;
     unsigned int index = 0;
 
+    uBit.display.clear();
     uBit.display.printChar('?');
     setNeutral();
 
     uBit.sleep(BIG_SLEEP);
-      
-    while(index < number)
+
+    while (index < numGestures)
     {
         int gx = uBit.accelerometer.getX() - neutralX;
         int gy = uBit.accelerometer.getY() - neutralY;
         int gz = uBit.accelerometer.getZ() - neutralZ;
-        
+
         unsigned int agx = abs(gx);
         unsigned int agy = abs(gy);
         unsigned int agz = abs(gz);
+
         uBit.display.image.clear();
-        if( agx >= agy && agx >= agz)
+
+        if (agx >= agy && agx >= agz)
         {
-            if(agx > DETECT_THRESHOLD)
+            if (agx > DETECT_THRESHOLD)
             {
-                gottasleep = true;
-                if(gx > 0) 
+                gottaSleep = true;
+                if (gx > 0)
                 {
-                    uBit.display.print(imgleft);
-                    gestures_array[index] = LEFT;
+                    uBit.display.print(MICROBIT_IMAGE_LEFT);
+                    gestures[index] = LEFT;
                 }
-                else 
+                else
                 {
-                    uBit.display.print(imgright);
-                    gestures_array[index] = RIGHT;
+                    uBit.display.print(MICROBIT_IMAGE_RIGHT);
+                    gestures[index] = RIGHT;
                 }
-                index++; 
-            } else {
-                uBit.display.clear(); 
+                index++;
             }
-            
-        } 
+            else
+                uBit.display.clear();
+        }
         else if (agy >= agx && agy >= agz)
         {
-             if(agy > DETECT_THRESHOLD)
+            if (agy > DETECT_THRESHOLD)
             {
-                gottasleep = true;
-                if(gy > 0) 
+                gottaSleep = true;
+                if (gy > 0)
                 {
-                    uBit.display.print(imgup);
-                    gestures_array[index] = UP;
+                    uBit.display.print(MICROBIT_IMAGE_UP);
+                    gestures[index] = UP;
                 }
-                else 
+                else
                 {
-                    uBit.display.print(imgdown);              
-                    gestures_array[index] = DOWN;
+                    uBit.display.print(MICROBIT_IMAGE_DOWN);
+                    gestures[index] = DOWN;
                 }
-                index++; 
-            } else {
-                uBit.display.clear(); 
+                index++;
             }
-        } 
-        else 
+            else
+                uBit.display.clear();
+        }
+        else
         {
-            if(agz > DETECT_THRESHOLD)
+            if (agz > DETECT_THRESHOLD)
             {
-                gottasleep = true;
-                if(gz > 0) 
+                gottaSleep = true;
+                if (gz > 0)
                 {
-                    uBit.display.print(imgback);
-                    gestures_array[index] = BACK;
+                    uBit.display.print(MICROBIT_IMAGE_BACK);
+                    gestures[index] = BACK;
                 }
-                else 
+                else
                 {
-                    uBit.display.print(imgfront);                 
-                    gestures_array[index] = FRONT;
+                    uBit.display.print(MICROBIT_IMAGE_FRONT);
+                    gestures[index] = FRONT;
                 }
-                index++; 
-            } else {
-                uBit.display.clear(); 
+                index++;
             }
+            else
+                uBit.display.clear();
         }
 
         uBit.sleep(SMALL_SLEEP);
-        if(gottasleep)
-        {   
-            gottasleep = false;
+        if (gottaSleep)
+        {
+            gottaSleep = false;
             uBit.sleep(BIG_SLEEP);
         }
-    }            
+    }
 
-    uBit.display.print(imgtick);
+    uBit.display.print(MICROBIT_IMAGE_TICK);
     uBit.sleep(BIG_SLEEP);
 
     uBit.display.clear();
 }
-

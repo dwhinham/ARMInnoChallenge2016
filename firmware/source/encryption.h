@@ -1,13 +1,13 @@
-#ifndef __ENCRYPTIONH_
-#define __ENCRYPTIONH_
+#ifndef ENCRYPTION_H
+#define ENCRYPTION_H
 
-#include "gestures.hpp"
-#include "MicroBit.h"
+#include <MicroBit.h>
 
-int getShift(enum gestures * array, unsigned int arraylength);
+#include "gestures.h"
 
-void encryptString(char * message, unsigned int n, int shift);
-void decryptString(unsigned char * message, unsigned int n, int shift);
+int getShift(const gesture_t *gestures, size_t numGestures);
 
+void encryptString(char* message, size_t len, int shift);
+void decryptString(char* message, size_t len, int shift);
 
-#endif
+#endif // ENCRYPTION_H
