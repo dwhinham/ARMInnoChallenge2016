@@ -42,6 +42,8 @@ MicroBit uBit;
 MicroBitSerial serial(USBTX, USBRX);
 gesture_t gestures[NUM_GESTURES];
 
+bool isSniffer;
+
 uint8_t getFletcherChecksum(ManagedString &string)
 {
     int32_t sum1 = 0;
@@ -64,6 +66,16 @@ uint8_t getFletcherChecksum(ManagedString &string)
 // Callback invoked when micro:bit receives a datagram
 void onRecv(MicroBitEvent event)
 {
+    if (isSniffer)
+    {
+        uint8_t rcvBuf[BUFFER_LEN + 1];
+        uBit.radio.datagram.recv(rcvBuf, sizeof(rcvBuf));
+	serial.send("<< GOT ");
+	serial.send((char*) rcvBuf);
+	serial.send("\r\n");
+	return;
+    }
+    
     bool isEncrypted;
     int16_t len;
     uint8_t rcvBuf[BUFFER_LEN + 1];
@@ -149,6 +161,14 @@ void generateEncryptionKey(MicroBitEvent event)
     (void) event;
 }
 
+void becomeSniffer(MicroBitEvent event)
+{
+    isSniffer = true;
+    uBit.display.scroll("Hehe", SCROLL_SPEED);
+    
+    (void) event;
+}
+
 int main()
 {
     ManagedString serialRxBuf;
@@ -161,53 +181,61 @@ int main()
     // Initialise the micro:bit radio
     uBit.radio.enable();
 
+    isSniffer = false;
+
     // Initialise radio receiver listener
     uBit.messageBus.listen(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, onRecv);
 
-    // Listen for button hold event
+    // Listen for button hold events
     uBit.messageBus.listen(MICROBIT_ID_BUTTON_A, MICROBIT_BUTTON_EVT_HOLD, generateEncryptionKey);
+    uBit.messageBus.listen(MICROBIT_ID_BUTTON_B, MICROBIT_BUTTON_EVT_HOLD, becomeSniffer);
 
     // Android serial app doesn't like baud rates >9600!
     serial.baud(9600);
 
     while(true)
     {
-        // Show smiley face
-        uBit.display.print(MICROBIT_IMAGE_SMILE);
+        if (isSniffer)
+	    uBit.sleep(10);
+	else
+	{
+	    // Show smiley face
+	    uBit.display.print(MICROBIT_IMAGE_SMILE);
 
-        // Read until a carriage return character
-        serialRxBuf = serial.readUntil("\r", SYNC_SLEEP);
+	    // Read until a carriage return character
+	    serialRxBuf = serial.readUntil("\r", SYNC_SLEEP);
 
-        // If the string starts with a '!', assume message should be encrypted
-        sendEncrypted = serialRxBuf.charAt(0) == '!';
+	    // If the string starts with a '!', assume message should be encrypted
+	    sendEncrypted = serialRxBuf.charAt(0) == '!';
+	    
+	    if (sendEncrypted)
+	    {
+	        // length() internally uses strlen(), so does *not* account for NULL terminator
+	        size_t len = serialRxBuf.length();
+		
+		// Remove leading '!'
+		serialRxBuf = serialRxBuf.substring(1, len - 1);
+		len--;
+		
+		ManagedString string(serialRxBuf);
+		
+		// Send message from serial port over the radio
+		if (preparePacketBuffer(string, radioTxBuf, sendEncrypted))
+		    uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
+	    }
+	    else
+	    {
+	        if (preparePacketBuffer(serialRxBuf, radioTxBuf, sendEncrypted))
+                    uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
+	    }
 
-        if (sendEncrypted)
-        {
-            // length() internally uses strlen(), so does *not* account for NULL terminator
-            size_t len = serialRxBuf.length();
-
-            // Remove leading '!'
-            serialRxBuf = serialRxBuf.substring(1, len - 1);
-            len--;
-
-	    ManagedString string(serialRxBuf);
-
-            // Send message from serial port over the radio
-            if (preparePacketBuffer(string, radioTxBuf, sendEncrypted))
-                uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
-        }
-        else
-        {
-            if (preparePacketBuffer(serialRxBuf, radioTxBuf, sendEncrypted))
-                uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
-        }
-
-        // Animate smiley face
-        for (int i = 0; i < serialRxBuf.length(); ++i)
-        {
-            uBit.display.print(i % 2 ? MICROBIT_IMAGE_SMILE_TALK : MICROBIT_IMAGE_SMILE);
-            uBit.sleep(100);
-        }
+	    // Animate smiley face
+	    for (int i = 0; i < serialRxBuf.length(); ++i)
+	    {
+	        uBit.display.print(i % 2 ? MICROBIT_IMAGE_SMILE_TALK : MICROBIT_IMAGE_SMILE);
+		uBit.sleep(100);
+	    }
+	}
     }
 
     // Simply release this fiber, which will mean we enter the scheduler. Worst
