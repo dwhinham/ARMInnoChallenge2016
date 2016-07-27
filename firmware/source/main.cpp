@@ -43,6 +43,7 @@ MicroBitSerial serial(USBTX, USBRX);
 gesture_t gestures[NUM_GESTURES];
 
 bool isSniffer;
+bool busy;
 
 uint8_t getFletcherChecksum(ManagedString &string)
 {
@@ -70,11 +71,13 @@ void onRecv(MicroBitEvent event)
     {
         uint8_t rcvBuf[BUFFER_LEN + 1];
         uBit.radio.datagram.recv(rcvBuf, sizeof(rcvBuf));
-    serial.send("<< GOT ");
-    serial.send((char*) rcvBuf);
-    serial.send("\r\n");
-    return;
+        serial.send("<< GOT ");
+        serial.send((char*) rcvBuf);
+        serial.send("\r\n");
+        return;
     }
+
+    busy = true;
 
     bool isEncrypted;
     int16_t len;
@@ -107,6 +110,8 @@ void onRecv(MicroBitEvent event)
     serial.send("\r\n");
 
     uBit.display.scroll((char*) &rcvBuf[2], SCROLL_SPEED);
+
+    busy = false;
 
     // Parameter unused
     (void) event;
@@ -145,6 +150,8 @@ bool preparePacketBuffer(ManagedString &string, uint8_t *sndBuf, bool isEncrypte
 
 void generateEncryptionKey(MicroBitEvent event)
 {
+    busy = true;
+
     // Disable radio listener
     uBit.messageBus.ignore(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, onRecv);
 
@@ -156,6 +163,8 @@ void generateEncryptionKey(MicroBitEvent event)
 
     // Restore smiley face
     uBit.display.print(MICROBIT_IMAGE_SMILE);
+
+    busy = false;
 
     // Parameter unused
     (void) event;
@@ -203,11 +212,10 @@ int main()
     // Show smiley face
     uBit.display.print(MICROBIT_IMAGE_SMILE);
 
-
     while (true)
     {
-        // Do nothing if in sniffing mode
-        if (isSniffer)
+        // Do nothing if in sniffing mode or getting gestures
+        if (isSniffer || busy)
         {
             uBit.sleep(10);
             continue;

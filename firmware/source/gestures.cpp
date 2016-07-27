@@ -34,7 +34,13 @@ void getGestures(size_t numGestures, gesture_t *gestures)
     {
         if (uBit.buttonB.isPressed() && index > 0)
         {
-            uBit.display.print(MICROBIT_IMAGE_CROSS);
+            for (int i = 0; i < 5; ++i)
+            {
+                uBit.display.print(MICROBIT_IMAGE_CROSS);
+                uBit.sleep(50);
+                uBit.display.clear();
+                uBit.sleep(50);
+            }
             uBit.sleep(BIG_SLEEP);
             --index;
             continue;
@@ -116,6 +122,15 @@ void getGestures(size_t numGestures, gesture_t *gestures)
         {
             gottaSleep = false;
             uBit.sleep(BIG_SLEEP);
+
+            for (int i = MICROBIT_DISPLAY_MAXIMUM_BRIGHTNESS; i >= 0; i -= 8)
+            {
+                uBit.display.setBrightness(i);
+                uBit.sleep(1);
+            }
+
+            uBit.display.clear();
+            uBit.display.setBrightness(MICROBIT_DISPLAY_MAXIMUM_BRIGHTNESS);
         }
     }
 
