@@ -142,6 +142,9 @@ void generateEncryptionKey(MicroBitEvent event)
     // Re-enable radio receiver listener
     uBit.messageBus.listen(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, onRecv);
 
+    // Restore smiley face
+    uBit.display.print(MICROBIT_IMAGE_SMILE);
+
     // Parameter unused
     (void) event;
 }
