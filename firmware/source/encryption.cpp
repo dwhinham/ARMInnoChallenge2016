@@ -6,7 +6,7 @@ int getShift(const gesture_t *gestures, size_t numGestures)
 {
     int shift = 0;
 
-    for (unsigned int i = 0; i < numGestures; i++)
+    for (size_t i = 0; i < numGestures; i++)
         shift += gestures[i];
 
     return shift;
