@@ -109,6 +109,16 @@ bool preparePacketBuffer(ManagedString &string, uint8_t *sndBuf, bool isEncrypte
 
     sndBuf[0] = HDR_CREATE(isEncrypted, len);
     sndBuf[1] = getFletcherChecksum(string);
+
+    if (isEncrypted) {
+      char encryptionBuf[len];
+      strcpy(encryptionBuf, string.toCharArray());
+
+      // Encrypt the message
+      encryptString(encryptionBuf, len, getShift(gestures, NUM_GESTURES));
+      string = ManagedString(encryptionBuf);
+    }
+    
     strcpy((char*) &sndBuf[2], string.toCharArray());
     sndBuf[len+2] = 0;
 
@@ -177,16 +187,10 @@ int main()
             serialRxBuf = serialRxBuf.substring(1, len - 1);
             len--;
 
-            // Temporary buffer for encrpytion
-            char encryptionBuf[len];
-            strcpy(encryptionBuf, serialRxBuf.toCharArray());
-
-            // Encrypt the message
-            encryptString(encryptionBuf, len, getShift(gestures, NUM_GESTURES));
-            ManagedString encryptedMessage(encryptionBuf);
+	    ManagedString string(serialRxBuf);
 
             // Send message from serial port over the radio
-            if (preparePacketBuffer(encryptedMessage, radioTxBuf, sendEncrypted))
+            if (preparePacketBuffer(string, radioTxBuf, sendEncrypted))
                 uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
         }
         else
