@@ -62,6 +62,15 @@ MICROBIT_IMAGE(
 )
 
 MICROBIT_IMAGE(
+    CROSS,
+    1, 0, 0, 0, 1,
+    0, 1, 0, 1, 0,
+    0, 0, 1, 0, 0,
+    0, 1, 0, 1, 0,
+    1, 0, 0, 0, 1,
+)
+
+MICROBIT_IMAGE(
     KEY,
     0, 0, 0, 0, 0,
     0, 1, 0, 0, 0,
