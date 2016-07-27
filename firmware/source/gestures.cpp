@@ -32,6 +32,14 @@ void getGestures(size_t numGestures, gesture_t *gestures)
 
     while (index < numGestures)
     {
+        if (uBit.buttonB.isPressed() && index > 0)
+        {
+            uBit.display.print(MICROBIT_IMAGE_CROSS);
+            uBit.sleep(BIG_SLEEP);
+            --index;
+            continue;
+        }
+
         int gx = uBit.accelerometer.getX() - neutralX;
         int gy = uBit.accelerometer.getY() - neutralY;
         int gz = uBit.accelerometer.getZ() - neutralZ;
