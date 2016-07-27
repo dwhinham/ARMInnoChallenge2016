@@ -21,7 +21,7 @@
  *                    /                 \ / \
  * Byte 1 Bit: 7   6   5   4   3   2   1   0
  *
- *                           .--------------- Fletcher checksum
+ *                           .----------------- Fletcher checksum
  *             _____________________________
  *            /                             \
  * Byte 2 Bit: 7   6   5   4   3   2   1   0
@@ -71,7 +71,6 @@ void onRecv(MicroBitEvent event)
 
     isEncrypted = (rcvBuf[0] & HDR_ENCRYPTED_FLAG_MSK) >> HDR_ENCRYPTED_FLAG_POS;
     len = (rcvBuf[0] & HDR_LENGTH_MSK) >> HDR_LENGTH_POS;
-    serial.send(ManagedString(len));
 
     rcvBuf[len+2] = 0;
 
