@@ -154,11 +154,15 @@ int main()
 
     // Listen for button hold event
     uBit.messageBus.listen(MICROBIT_ID_BUTTON_A, MICROBIT_BUTTON_EVT_HOLD, generateEncryptionKey);
+
     // Android serial app doesn't like baud rates >9600!
     serial.baud(9600);
 
     while(true)
     {
+        // Show smiley face
+        uBit.display.print(MICROBIT_IMAGE_SMILE);
+
         // Read until a carriage return character
         serialRxBuf = serial.readUntil("\r", SYNC_SLEEP);
 
@@ -167,23 +171,36 @@ int main()
 
         if (sendEncrypted)
         {
-            serialRxBuf = serialRxBuf.substring(1, serialRxBuf.length() - 1);
-            const char * chars = serialRxBuf.toCharArray();
-            char * msg = new char[serialRxBuf.length()];
-            strcpy(msg, chars);
-            encryptString(msg,serialRxBuf.length(), getShift(gestures, NUM_GESTURES));
-            ManagedString encryptedMessage((const char *) msg);
+            // length() internally uses strlen(), so does *not* account for NULL terminator
+            size_t len = serialRxBuf.length();
+
+            // Remove leading '!'
+            serialRxBuf = serialRxBuf.substring(1, len - 1);
+            len--;
+
+            // Temporary buffer for encrpytion
+            char encryptionBuf[len];
+            strcpy(encryptionBuf, serialRxBuf.toCharArray());
+
+            // Encrypt the message
+            encryptString(encryptionBuf, len, getShift(gestures, NUM_GESTURES));
+            ManagedString encryptedMessage(encryptionBuf);
 
             // Send message from serial port over the radio
             if (preparePacketBuffer(encryptedMessage, radioTxBuf, sendEncrypted))
                 uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
-
-            delete[] msg;
         }
         else
         {
             if (preparePacketBuffer(serialRxBuf, radioTxBuf, sendEncrypted))
                 uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
+        }
+
+        // Animate smiley face
+        for (int i = 0; i < serialRxBuf.length(); ++i)
+        {
+            uBit.display.print(i % 2 ? MICROBIT_IMAGE_SMILE_TALK : MICROBIT_IMAGE_SMILE);
+            uBit.sleep(100);
         }
     }
 
