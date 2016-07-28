@@ -37,6 +37,9 @@
     (((ENC) << HDR_ENCRYPTED_FLAG_POS) & HDR_ENCRYPTED_FLAG_MSK) | \
     (((LEN) << HDR_LENGTH_POS) & HDR_LENGTH_MSK)
 
+#define NAME_A "Ash"
+#define NAME_B "Misty"
+
 // Global variables
 MicroBit uBit;
 MicroBitSerial serial(USBTX, USBRX);
@@ -44,6 +47,8 @@ gesture_t gestures[NUM_GESTURES];
 
 bool isSniffer;
 bool busy;
+bool choosingName;
+ManagedString chosenName;
 
 uint8_t getFletcherChecksum(ManagedString &string)
 {
@@ -185,6 +190,46 @@ void toggleSniffer(MicroBitEvent event)
     (void) event;
 }
 
+void onNameAPicked(MicroBitEvent event);
+void onNameBPicked(MicroBitEvent event);
+
+void beginListening() {
+    // Stop waiting for name to be chosen
+    uBit.messageBus.ignore(MICROBIT_ID_BUTTON_A, MICROBIT_BUTTON_EVT_CLICK, onNameAPicked);
+    uBit.messageBus.ignore(MICROBIT_ID_BUTTON_B, MICROBIT_BUTTON_EVT_CLICK, onNameBPicked);
+    
+    choosingName = false;
+    uBit.display.scroll(ManagedString("Hi, ") + chosenName, SCROLL_SPEED);
+    // Initialise radio receiver listener
+    uBit.messageBus.listen(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, onRecv);
+
+    // Listen for button hold events
+    uBit.messageBus.listen(MICROBIT_ID_BUTTON_A, MICROBIT_BUTTON_EVT_HOLD, generateEncryptionKey);
+    uBit.messageBus.listen(MICROBIT_ID_BUTTON_B, MICROBIT_BUTTON_EVT_HOLD, toggleSniffer);
+
+    // Android serial app doesn't like baud rates >9600!
+    serial.baud(9600);
+
+    // Show smiley face
+    uBit.display.print(MICROBIT_IMAGE_SMILE);
+}
+
+void onNameAPicked(MicroBitEvent event) {
+    chosenName = ManagedString(NAME_A);
+    beginListening();
+
+    // Parameter unused
+    (void) event;
+}
+
+void onNameBPicked(MicroBitEvent event) {
+    chosenName = ManagedString(NAME_B);
+    beginListening();
+
+    // Parameter unused
+    (void) event;
+}
+
 int main()
 {
     ManagedString serialRxBuf;
@@ -198,24 +243,18 @@ int main()
     uBit.radio.enable();
 
     isSniffer = false;
+    choosingName = true;
 
-    // Initialise radio receiver listener
-    uBit.messageBus.listen(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, onRecv);
+    uBit.display.scroll("Ash or Misty?", SCROLL_SPEED);
 
-    // Listen for button hold events
-    uBit.messageBus.listen(MICROBIT_ID_BUTTON_A, MICROBIT_BUTTON_EVT_HOLD, generateEncryptionKey);
-    uBit.messageBus.listen(MICROBIT_ID_BUTTON_B, MICROBIT_BUTTON_EVT_HOLD, toggleSniffer);
-
-    // Android serial app doesn't like baud rates >9600!
-    serial.baud(9600);
-
-    // Show smiley face
-    uBit.display.print(MICROBIT_IMAGE_SMILE);
+    // Stop waiting for name to be chosen
+    uBit.messageBus.listen(MICROBIT_ID_BUTTON_A, MICROBIT_BUTTON_EVT_CLICK, onNameAPicked);
+    uBit.messageBus.listen(MICROBIT_ID_BUTTON_B, MICROBIT_BUTTON_EVT_CLICK, onNameBPicked);
 
     while (true)
     {
         // Do nothing if in sniffing mode or getting gestures
-        if (isSniffer || busy)
+        if (isSniffer || busy || choosingName)
         {
             uBit.sleep(10);
             continue;
@@ -244,7 +283,8 @@ int main()
             serialRxBuf = serialRxBuf.substring(1, len - 1);
             len--;
 
-            ManagedString string(serialRxBuf);
+            ManagedString serialString(serialRxBuf);
+            ManagedString string = chosenName + ManagedString(": ") + serialString;
 
             // Send message from serial port over the radio
             if (preparePacketBuffer(string, radioTxBuf, sendEncrypted))
@@ -252,7 +292,10 @@ int main()
         }
         else
         {
-            if (preparePacketBuffer(serialRxBuf, radioTxBuf, sendEncrypted))
+            ManagedString serialString(serialRxBuf);
+            ManagedString string = chosenName + ManagedString(": ") + serialString;
+
+            if (preparePacketBuffer(string, radioTxBuf, sendEncrypted))
                 uBit.radio.datagram.send(radioTxBuf, BUFFER_LEN);
         }
 
