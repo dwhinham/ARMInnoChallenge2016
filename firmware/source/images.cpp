@@ -1,3 +1,15 @@
+/**
+ * BBC micro:bit Message Encryption Demo
+ * =====================================
+ *
+ * Entry to the ARM Intern Innovation Challenge 2016
+ *
+ * by Team Gotta Cache 'Em All:
+ *   * Dale Whinham
+ *   * Alex Gilday
+ *   * Gaetan Bahl
+**/
+
 #include <MicroBit.h>
 
 #define MICROBIT_IMAGE(NAME, DATA...) \

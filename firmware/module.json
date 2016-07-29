@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "bin": "./source",
   "private": true,
-  "description": "Firmware for the BBC MicroBit",
+  "description": "Message Encryption Demo Firmware for the BBC micro:bit",
   "author": "Dale Whinham, Alex Gilday, Gaetan Bahl",
   "license": "Apache-2.0",
   "dependencies": {

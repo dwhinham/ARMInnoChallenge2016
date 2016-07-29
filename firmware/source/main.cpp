@@ -1,3 +1,15 @@
+/**
+ * BBC micro:bit Message Encryption Demo
+ * =====================================
+ *
+ * Entry to the ARM Intern Innovation Challenge 2016
+ *
+ * by Team Gotta Cache 'Em All:
+ *   * Dale Whinham
+ *   * Alex Gilday
+ *   * Gaetan Bahl
+**/
+
 #include <MicroBit.h>
 
 #include "encryption.h"
@@ -197,7 +209,7 @@ void beginListening() {
     // Stop waiting for name to be chosen
     uBit.messageBus.ignore(MICROBIT_ID_BUTTON_A, MICROBIT_BUTTON_EVT_CLICK, onNameAPicked);
     uBit.messageBus.ignore(MICROBIT_ID_BUTTON_B, MICROBIT_BUTTON_EVT_CLICK, onNameBPicked);
-    
+
     choosingName = false;
     uBit.display.scroll(ManagedString("Hi, ") + chosenName, SCROLL_SPEED);
     // Initialise radio receiver listener
